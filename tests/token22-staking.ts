@@ -51,7 +51,7 @@ describe("token22-staking", async () => {
       TOKEN_2022_PROGRAM_ID
     )
     
-    console.log("Staking token mint: ", stakingTokenMint.toBase58())
+    // console.log("Staking token mint: ", stakingTokenMint.toBase58())
 
     // assign staking token mint to a PDA of the staking program
     let setAuthTx = await setAuthority(
@@ -66,7 +66,7 @@ describe("token22-staking", async () => {
       TOKEN_2022_PROGRAM_ID
     )
     
-    console.log("Authority assignment tx: ", setAuthTx)
+    // console.log("Authority assignment tx: ", setAuthTx)
   })
 
   it("Create test token to stake", async () => {
@@ -82,7 +82,7 @@ describe("token22-staking", async () => {
       TOKEN_2022_PROGRAM_ID
     )
 
-    console.log("Test token mint: ", testTokenMint.toBase58())
+    // console.log("Test token mint: ", testTokenMint.toBase58())
 
     // create associated token account of test user
     user1Ata = await createAssociatedTokenAccount (
@@ -94,7 +94,7 @@ describe("token22-staking", async () => {
       TOKEN_2022_PROGRAM_ID
     )
 
-    console.log("Test user associated tokena account: ", user1Ata.toBase58())
+    // console.log("Test user associated tokena account: ", user1Ata.toBase58())
 
     // mint 1000 tokens to test user
     let mintTx = await mintTo(
@@ -109,7 +109,7 @@ describe("token22-staking", async () => {
       TOKEN_2022_PROGRAM_ID
     )
     
-    console.log("Mint tx: ", mintTx)
+    // console.log("Mint tx: ", mintTx)
   })
 
   it("Create test stake pool!", async () => {
@@ -177,23 +177,26 @@ describe("token22-staking", async () => {
 
   it("Stake tokens!", async () => {
     const transferAmount = 1
+
     // fetch stake account before transfer
     let userEntryAcct = await program.account.stakeEntry.fetch(user1StakeEntry)
     let initialEntryBalance = userEntryAcct.balance
     // fetch user token account before transfer
     let userTokenAcct = await getAccount(provider.connection, user1Ata, undefined, TOKEN_2022_PROGRAM_ID)
     let initialUserBalance = userTokenAcct.amount
-    console.log("User 1 amount staked before transfer: ", userEntryAcct.balance.toNumber())
-    console.log("User 1 token account balance before transfer: ", initialUserBalance.toString())
+    // console.log("User 1 amount staked before transfer: ", userEntryAcct.balance.toNumber())
+    // console.log("User 1 token account balance before transfer: ", initialUserBalance.toString())
 
     // fetch pool state acct 
     let poolAcct = await program.account.poolState.fetch(pool)
     let initialPoolAmt = poolAcct.amount
+
     // fetch stake vault token account
     let stakeVaultAcct = await getAccount(provider.connection, stakeVault, undefined, TOKEN_2022_PROGRAM_ID)
     let initialVaultBalance = stakeVaultAcct.amount
-    console.log("Total amount staked in pool: ", poolAcct.amount.toNumber())
-    console.log("Vault token account balance before transfer: ", initialVaultBalance.toString())
+    
+    // console.log("Total amount staked in pool: ", poolAcct.amount.toNumber())
+    // console.log("Vault token account balance before transfer: ", initialVaultBalance.toString())
 
     await program.methods.stake(new BN(transferAmount))
     .accounts({
@@ -216,18 +219,31 @@ describe("token22-staking", async () => {
     assert(userTokenAcct.amount == initialUserBalance - BigInt(transferAmount))
     assert(stakeVaultAcct.amount == initialVaultBalance + BigInt(transferAmount))
 
-
+    // verify state account balances
     let updatedUserEntryAcct = await program.account.stakeEntry.fetch(user1StakeEntry)
-    assert(updatedUserEntryAcct.balance.toNumber() == initialEntryBalance.toNumber()+transferAmount)
-    console.log("User 1 amount staked after transfer: ", updatedUserEntryAcct.balance.toNumber())
-
     let updatedPoolStateAcct = await program.account.poolState.fetch(pool)
+    assert(updatedUserEntryAcct.balance.toNumber() == initialEntryBalance.toNumber()+transferAmount)
     assert(updatedPoolStateAcct.amount.toNumber() == initialPoolAmt.toNumber() + transferAmount)
     assert(updatedPoolStateAcct.amount.toNumber() == updatedUserEntryAcct.balance.toNumber())
-    console.log("Total amount staked in pool after transfer: ", updatedPoolStateAcct.amount.toNumber())
+    // console.log("User 1 amount staked after transfer: ", updatedUserEntryAcct.balance.toNumber())
+    // console.log("Total amount staked in pool after transfer: ", updatedPoolStateAcct.amount.toNumber())
   })
   it("Unstake!", async () => {
     const unstakeAmount = 1
+
+    // fetch stake account before unstake
+    let userEntryAcct = await program.account.stakeEntry.fetch(user1StakeEntry)
+    let initialEntryBalance = userEntryAcct.balance
+    // fetch user token account before transfer
+    let userTokenAcct = await getAccount(provider.connection, user1Ata, undefined, TOKEN_2022_PROGRAM_ID)
+    let initialUserTokenAcctBalance = userTokenAcct.amount
+
+    // fetch pool state acct 
+    let poolAcct = await program.account.poolState.fetch(pool)
+    let initialPoolAmt = poolAcct.amount
+    // fetch stake vault token account
+    let stakeVaultAcct = await getAccount(provider.connection, stakeVault, undefined, TOKEN_2022_PROGRAM_ID)
+    let initialVaultBalance = stakeVaultAcct.amount
 
     await program.methods.unstake(new BN(unstakeAmount))
     .accounts({
@@ -243,5 +259,17 @@ describe("token22-staking", async () => {
     })
     .signers([payer])
     .rpc()
+
+    // verify token account balances
+    userTokenAcct = await getAccount(provider.connection, user1Ata, undefined, TOKEN_2022_PROGRAM_ID)
+    stakeVaultAcct = await getAccount(provider.connection, stakeVault, undefined, TOKEN_2022_PROGRAM_ID)
+    assert(userTokenAcct.amount == initialUserTokenAcctBalance + BigInt(unstakeAmount))
+    assert(stakeVaultAcct.amount == initialVaultBalance - BigInt(unstakeAmount))
+
+    // verify state accounts
+    userEntryAcct = await program.account.stakeEntry.fetch(user1StakeEntry)
+    poolAcct = await program.account.poolState.fetch(pool)
+    assert(poolAcct.amount.toNumber() == initialPoolAmt.toNumber() - unstakeAmount)
+    assert(userEntryAcct.balance == initialEntryBalance - unstakeAmount)
   })
 });

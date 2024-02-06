@@ -13,7 +13,7 @@ pub fn handler(ctx: Context<Unstake>, amount: u64) -> Result <()> {
     msg!("Requested withdraw amount: {}", amount);
     msg!("Total staked before withdrawal: {}", ctx.accounts.pool_state.amount);
 
-    // verify user has >= amount of tokens staked
+    // verify user and pool have >= requested amount of tokens staked
     if amount > user_entry.balance || amount > ctx.accounts.pool_state.amount {
         return Err(StakeError::OverdrawError.into())
     }
