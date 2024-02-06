@@ -3,7 +3,9 @@ import { Program } from "@coral-xyz/anchor";
 import { Token22Staking } from "../target/types/token22_staking";
 import { PublicKey, SystemProgram, SYSVAR_RENT_PUBKEY, LAMPORTS_PER_SOL } from '@solana/web3.js'
 import { TOKEN_PROGRAM_ID, mintTo, createMint, setAuthority, AuthorityType, getAssociatedTokenAddress, createAssociatedTokenAccount, getAccount, TOKEN_2022_PROGRAM_ID } from '@solana/spl-token'
-import { delay, safeAirdrop } from './utils/utils'
+import { delay, safeAirdrop, MULT } from './utils/utils'
+import { assert } from "chai"
+import { BN } from "bn.js"
 
 describe("token22-staking", async () => {
   // Configure the client to use the local cluster.
@@ -19,6 +21,7 @@ describe("token22-staking", async () => {
   let pool: PublicKey = null
   let testTokenMint: PublicKey = null
   let user1StakeEntry: PublicKey = null
+  let user1Ata: PublicKey = null
   let user2StakeEntry: PublicKey = null
   let user3StakeEntry: PublicKey = null
 
@@ -82,7 +85,7 @@ describe("token22-staking", async () => {
     console.log("Test token mint: ", testTokenMint.toBase58())
 
     // create associated token account of test user
-    let ata = await createAssociatedTokenAccount (
+    user1Ata = await createAssociatedTokenAccount (
       provider.connection,
       payer,
       testTokenMint,
@@ -91,14 +94,14 @@ describe("token22-staking", async () => {
       TOKEN_2022_PROGRAM_ID
     )
 
-    console.log("Test user associated tokena account: ", ata.toBase58())
+    console.log("Test user associated tokena account: ", user1Ata.toBase58())
 
     // mint 1000 tokens to test user
     let mintTx = await mintTo(
       provider.connection,
       payer,
       testTokenMint,
-      ata,
+      user1Ata,
       payer,
       1000,
       undefined,
@@ -128,7 +131,7 @@ describe("token22-staking", async () => {
       poolAuthority: vaultAuthority,
       poolState: pool,
       tokenMint: testTokenMint,
-      tokenVault: vault,
+      tokenVault: stakeVault,
       stakingTokenMint: stakingTokenMint,
       payer: payer.publicKey,
       tokenProgram: TOKEN_2022_PROGRAM_ID,
@@ -137,6 +140,14 @@ describe("token22-staking", async () => {
     })
     .signers([payer])
     .rpc()
+
+    const poolAcct = await program.account.poolState.fetch(pool)
+    assert(poolAcct.vaultAuthority.toBase58() == vaultAuthority.toBase58())
+    assert(poolAcct.amount.toNumber() == 0)
+    assert(poolAcct.stakingTokenMint.toBase58() == stakingTokenMint.toBase58())
+    assert(poolAcct.tokenMint.toBase58() == testTokenMint.toBase58())
+    assert(poolAcct.vaultAuthBump == vaultAuthBump)
+    assert(poolAcct.vaultBump == vaultBump)
   })
 
   it("Create stake entry for user", async () => {
@@ -157,11 +168,41 @@ describe("token22-staking", async () => {
     })
     .signers([payer])
     .rpc()
+
+    const stakeAcct = await program.account.stakeEntry.fetch(user1StakeEntry)
+    assert(stakeAcct.user.toBase58() == payer.publicKey.toBase58())
+    assert(stakeAcct.balance == 0)
+    assert(stakeAcct.bump == stakeentryBump)
   })
 
-  // it("Is initialized!", async () => {
-  //   // Add your test here.
-  //   const tx = await program.methods.initialize().rpc();
-  //   console.log("Your transaction signature", tx);
-  // });
+  it("Stake tokens!", async () => {
+    // fetch stake acct before transfer
+    let stakeAcct = await program.account.stakeEntry.fetch(user1StakeEntry)
+    console.log("User 1 amount staked before transfer: ", stakeAcct.balance.toNumber())
+
+    // fetch pool state acct 
+    let poolAcct = await program.account.poolState.fetch(pool)
+    console.log("Total amount staked in pool: ", poolAcct.amount.toNumber())
+
+    await program.methods.stake(new BN(1))
+    .accounts({
+      poolState: pool,
+      tokenMint: testTokenMint,
+      poolAuthority: vaultAuthority,
+      tokenVault: stakeVault,
+      user: payer.publicKey,
+      userTokenAccount: user1Ata,
+      userStakeEntry: user1StakeEntry,
+      tokenProgram: TOKEN_2022_PROGRAM_ID,
+      systemProgram: SystemProgram.programId,
+    })
+    .signers([payer])
+    .rpc()
+
+    stakeAcct = await program.account.stakeEntry.fetch(user1StakeEntry)
+    console.log("User 1 amount staked after transfer: ", stakeAcct.balance.toNumber())
+
+    poolAcct = await program.account.poolState.fetch(pool)
+    console.log("Total amount staked in pool after transfer: ", poolAcct.amount.toNumber())
+  })
 });

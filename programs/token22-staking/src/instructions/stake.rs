@@ -1,12 +1,12 @@
 use {
     anchor_lang::prelude::*,
     crate::{state::*, errors::*},
-    anchor_spl::{token_interface, token::{Transfer, transfer}},
+    anchor_spl::{token_interface, token_2022::{TransferChecked, transfer_checked}},
 };
 
 pub fn handler(ctx: Context<Stake>, stake_amount: u64) -> Result <()> {
-    // transfer amount from user token acct to vault
-    transfer(ctx.accounts.transfer_ctx(), stake_amount)?;
+    // transfer_checked from token22 program
+    transfer_checked(ctx.accounts.transfer_checked_ctx(), stake_amount, 6)?;
 
     msg!("Pool initial total: {}", ctx.accounts.pool_state.amount);
     msg!("User entry initial balance: {}", ctx.accounts.user_stake_entry.balance);
@@ -33,7 +33,7 @@ pub struct Stake<'info> {
         bump = pool_state.bump,
     )]
     pub pool_state: Account<'info, PoolState>,
-    // Mint of token
+    // Mint of token to stake
     #[account(mut)]
     pub token_mint: InterfaceAccount<'info, token_interface::Mint>,
     // PDA, auth over all token vaults
@@ -45,6 +45,7 @@ pub struct Stake<'info> {
     pub pool_authority: AccountInfo<'info>,
     // pool token account for Token Mint
     #[account(
+        mut,
         // use token_mint, pool auth, and constant as seeds for token a vault
         seeds = [token_mint.key().as_ref(), pool_authority.key().as_ref(), VAULT_SEED.as_bytes()],
         bump = pool_state.vault_bump,
@@ -75,12 +76,14 @@ pub struct Stake<'info> {
 }
 
 impl<'info> Stake <'info> {
-    pub fn transfer_ctx(&self) -> CpiContext<'_, '_, '_, 'info, Transfer<'info>> {
+    // transfer_checked for Token2022
+    pub fn transfer_checked_ctx(&self) -> CpiContext<'_, '_, '_, 'info, TransferChecked<'info>> {
         let cpi_program = self.token_program.to_account_info();
-        let cpi_accounts = Transfer {
+        let cpi_accounts = TransferChecked {
             from: self.user_token_account.to_account_info(),
             to: self.token_vault.to_account_info(),
-            authority: self.user.to_account_info()
+            authority: self.user.to_account_info(),
+            mint: self.token_mint.to_account_info()
         };
 
         CpiContext::new(cpi_program, cpi_accounts)
