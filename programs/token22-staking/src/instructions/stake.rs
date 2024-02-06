@@ -29,6 +29,7 @@ pub fn handler(ctx: Context<Stake>, stake_amount: u64) -> Result <()> {
 pub struct Stake<'info> {
     // pool state account
     #[account(
+        mut,
         seeds = [token_mint.key().as_ref(), STAKE_POOL_STATE_SEED.as_bytes()],
         bump = pool_state.bump,
     )]

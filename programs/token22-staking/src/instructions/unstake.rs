@@ -2,8 +2,8 @@ use {
     anchor_lang::prelude::*,
     crate::{state::*, errors::*},
     anchor_spl::token_interface,
+    spl_token_2022::instruction::transfer_checked,
     solana_program::{program::invoke_signed},
-    spl_token::instruction::transfer_checked,
 };
 
 pub fn handler(ctx: Context<Unstake>, amount: u64) -> Result <()> {
@@ -14,7 +14,7 @@ pub fn handler(ctx: Context<Unstake>, amount: u64) -> Result <()> {
     msg!("Total staked before withdrawal: {}", ctx.accounts.pool_state.amount);
 
     // verify user has >= amount of tokens staked
-    if amount > user_entry.balance {
+    if amount > user_entry.balance || amount > ctx.accounts.pool_state.amount {
         return Err(StakeError::OverdrawError.into())
     }
 
@@ -63,6 +63,7 @@ pub fn handler(ctx: Context<Unstake>, amount: u64) -> Result <()> {
 pub struct Unstake<'info> {
     // pool state account
     #[account(
+        mut,
         seeds = [token_mint.key().as_ref(), STAKE_POOL_STATE_SEED.as_bytes()],
         bump = pool_state.bump,
     )]
@@ -79,6 +80,7 @@ pub struct Unstake<'info> {
     pub pool_authority: AccountInfo<'info>,
     // pool token account for Token Mint
     #[account(
+        mut,
         // use token_mint, pool auth, and constant as seeds for token a vault
         seeds = [token_mint.key().as_ref(), pool_authority.key().as_ref(), VAULT_SEED.as_bytes()],
         bump = pool_state.vault_bump,

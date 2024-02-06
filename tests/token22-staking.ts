@@ -176,15 +176,26 @@ describe("token22-staking", async () => {
   })
 
   it("Stake tokens!", async () => {
-    // fetch stake acct before transfer
-    let stakeAcct = await program.account.stakeEntry.fetch(user1StakeEntry)
-    console.log("User 1 amount staked before transfer: ", stakeAcct.balance.toNumber())
+    const transferAmount = 1
+    // fetch stake account before transfer
+    let userEntryAcct = await program.account.stakeEntry.fetch(user1StakeEntry)
+    let initialEntryBalance = userEntryAcct.balance
+    // fetch user token account before transfer
+    let userTokenAcct = await getAccount(provider.connection, user1Ata, undefined, TOKEN_2022_PROGRAM_ID)
+    let initialUserBalance = userTokenAcct.amount
+    console.log("User 1 amount staked before transfer: ", userEntryAcct.balance.toNumber())
+    console.log("User 1 token account balance before transfer: ", initialUserBalance.toString())
 
     // fetch pool state acct 
     let poolAcct = await program.account.poolState.fetch(pool)
+    let initialPoolAmt = poolAcct.amount
+    // fetch stake vault token account
+    let stakeVaultAcct = await getAccount(provider.connection, stakeVault, undefined, TOKEN_2022_PROGRAM_ID)
+    let initialVaultBalance = stakeVaultAcct.amount
     console.log("Total amount staked in pool: ", poolAcct.amount.toNumber())
+    console.log("Vault token account balance before transfer: ", initialVaultBalance.toString())
 
-    await program.methods.stake(new BN(1))
+    await program.methods.stake(new BN(transferAmount))
     .accounts({
       poolState: pool,
       tokenMint: testTokenMint,
@@ -199,10 +210,38 @@ describe("token22-staking", async () => {
     .signers([payer])
     .rpc()
 
-    stakeAcct = await program.account.stakeEntry.fetch(user1StakeEntry)
-    console.log("User 1 amount staked after transfer: ", stakeAcct.balance.toNumber())
+    // verify token account balances
+    userTokenAcct = await getAccount(provider.connection, user1Ata, undefined, TOKEN_2022_PROGRAM_ID)
+    stakeVaultAcct = await getAccount(provider.connection, stakeVault, undefined, TOKEN_2022_PROGRAM_ID)
+    assert(userTokenAcct.amount == initialUserBalance - BigInt(transferAmount))
+    assert(stakeVaultAcct.amount == initialVaultBalance + BigInt(transferAmount))
 
-    poolAcct = await program.account.poolState.fetch(pool)
-    console.log("Total amount staked in pool after transfer: ", poolAcct.amount.toNumber())
+
+    let updatedUserEntryAcct = await program.account.stakeEntry.fetch(user1StakeEntry)
+    assert(updatedUserEntryAcct.balance.toNumber() == initialEntryBalance.toNumber()+transferAmount)
+    console.log("User 1 amount staked after transfer: ", updatedUserEntryAcct.balance.toNumber())
+
+    let updatedPoolStateAcct = await program.account.poolState.fetch(pool)
+    assert(updatedPoolStateAcct.amount.toNumber() == initialPoolAmt.toNumber() + transferAmount)
+    assert(updatedPoolStateAcct.amount.toNumber() == updatedUserEntryAcct.balance.toNumber())
+    console.log("Total amount staked in pool after transfer: ", updatedPoolStateAcct.amount.toNumber())
+  })
+  it("Unstake!", async () => {
+    const unstakeAmount = 1
+
+    await program.methods.unstake(new BN(unstakeAmount))
+    .accounts({
+      poolState: pool,
+      tokenMint: testTokenMint,
+      poolAuthority: vaultAuthority,
+      tokenVault: stakeVault,
+      user: payer.publicKey,
+      userTokenAccount: user1Ata,
+      userStakeEntry: user1StakeEntry,
+      tokenProgram: TOKEN_2022_PROGRAM_ID,
+      systemProgram: SystemProgram.programId,
+    })
+    .signers([payer])
+    .rpc()
   })
 });
