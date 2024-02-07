@@ -22,6 +22,7 @@ describe("token22-staking", async () => {
   let testTokenMint: PublicKey = null
   let user1StakeEntry: PublicKey = null
   let user1Ata: PublicKey = null
+  let user1StakeAta: PublicKey = null
   let user2StakeEntry: PublicKey = null
   let user3StakeEntry: PublicKey = null
 
@@ -43,7 +44,7 @@ describe("token22-staking", async () => {
     stakingTokenMint = await createMint(
       provider.connection,
       payer,
-      payer.publicKey,
+      vaultAuthority,
       undefined,
       6,
       undefined,
@@ -54,17 +55,17 @@ describe("token22-staking", async () => {
     // console.log("Staking token mint: ", stakingTokenMint.toBase58())
 
     // assign staking token mint to a PDA of the staking program
-    let setAuthTx = await setAuthority(
-      provider.connection,
-      payer,
-      stakingTokenMint,
-      payer,
-      AuthorityType.MintTokens,
-      vaultAuthority,
-      undefined,
-      undefined,
-      TOKEN_2022_PROGRAM_ID
-    )
+    // let setAuthTx = await setAuthority(
+    //   provider.connection,
+    //   payer,
+    //   stakingTokenMint,
+    //   payer,
+    //   AuthorityType.MintTokens,
+    //   vaultAuthority,
+    //   undefined,
+    //   undefined,
+    //   TOKEN_2022_PROGRAM_ID
+    // )
     
     // console.log("Authority assignment tx: ", setAuthTx)
   })
@@ -84,7 +85,18 @@ describe("token22-staking", async () => {
 
     // console.log("Test token mint: ", testTokenMint.toBase58())
 
-    // create associated token account of test user
+    // create test token ata of test user
+    // user1StakeAta = user1StakeTokenAcct
+    // user1StakeAta = await getAssociatedTokenAddress(stakingTokenMint, payer.publicKey, false, TOKEN_2022_PROGRAM_ID)
+    user1StakeAta = await createAssociatedTokenAccount (
+      provider.connection,
+      payer,
+      stakingTokenMint,
+      payer.publicKey,
+      undefined,
+      TOKEN_2022_PROGRAM_ID
+    )
+
     user1Ata = await createAssociatedTokenAccount (
       provider.connection,
       payer,
@@ -163,7 +175,10 @@ describe("token22-staking", async () => {
     .accounts({
       user: payer.publicKey,
       userStakeEntry: user1StakeEntry,
+      userStakeTokenAccount: user1StakeAta,
+      stakingTokenMint: stakingTokenMint,
       poolState: pool,
+      tokenProgram: TOKEN_2022_PROGRAM_ID,
       systemProgram: SystemProgram.programId
     })
     .signers([payer])
@@ -229,7 +244,7 @@ describe("token22-staking", async () => {
     // console.log("Total amount staked in pool after transfer: ", updatedPoolStateAcct.amount.toNumber())
   })
   it("Unstake!", async () => {
-    const unstakeAmount = 1
+    // const unstakeAmount = 1
 
     // fetch stake account before unstake
     let userEntryAcct = await program.account.stakeEntry.fetch(user1StakeEntry)
@@ -245,7 +260,7 @@ describe("token22-staking", async () => {
     let stakeVaultAcct = await getAccount(provider.connection, stakeVault, undefined, TOKEN_2022_PROGRAM_ID)
     let initialVaultBalance = stakeVaultAcct.amount
 
-    await program.methods.unstake(new BN(unstakeAmount))
+    await program.methods.unstake()
     .accounts({
       poolState: pool,
       tokenMint: testTokenMint,
@@ -254,6 +269,8 @@ describe("token22-staking", async () => {
       user: payer.publicKey,
       userTokenAccount: user1Ata,
       userStakeEntry: user1StakeEntry,
+      stakingTokenMint: stakingTokenMint,
+      userStakeTokenAccount: user1StakeAta,
       tokenProgram: TOKEN_2022_PROGRAM_ID,
       systemProgram: SystemProgram.programId,
     })
@@ -263,13 +280,16 @@ describe("token22-staking", async () => {
     // verify token account balances
     userTokenAcct = await getAccount(provider.connection, user1Ata, undefined, TOKEN_2022_PROGRAM_ID)
     stakeVaultAcct = await getAccount(provider.connection, stakeVault, undefined, TOKEN_2022_PROGRAM_ID)
-    assert(userTokenAcct.amount == initialUserTokenAcctBalance + BigInt(unstakeAmount))
-    assert(stakeVaultAcct.amount == initialVaultBalance - BigInt(unstakeAmount))
+    let userStakeTokenAcct = await getAccount(provider.connection, user1StakeAta, undefined, TOKEN_2022_PROGRAM_ID)
+    console.log("User staking token balance: ", userStakeTokenAcct.amount.toString())
+    assert(userStakeTokenAcct.amount > BigInt(0))
+    assert(userTokenAcct.amount == initialUserTokenAcctBalance + BigInt(initialEntryBalance))
+    assert(stakeVaultAcct.amount == initialVaultBalance - BigInt(initialEntryBalance))
 
     // verify state accounts
     userEntryAcct = await program.account.stakeEntry.fetch(user1StakeEntry)
     poolAcct = await program.account.poolState.fetch(pool)
-    assert(poolAcct.amount.toNumber() == initialPoolAmt.toNumber() - unstakeAmount)
-    assert(userEntryAcct.balance == initialEntryBalance - unstakeAmount)
+    assert(poolAcct.amount.toNumber() == initialPoolAmt.toNumber() - initialEntryBalance)
+    assert(userEntryAcct.balance == 0)
   })
 });

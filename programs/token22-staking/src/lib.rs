@@ -23,7 +23,7 @@ pub mod token_22_staking {
         stake::handler(ctx, amount)
     }
 
-    pub fn unstake(ctx: Context<Unstake>, amount: u64) -> Result<()> {
-        unstake::handler(ctx, amount)
+    pub fn unstake(ctx: Context<Unstake>) -> Result<()> {
+        unstake::handler(ctx)
     }
 }

@@ -2,19 +2,20 @@ use {
     anchor_lang::prelude::*,
     crate::{state::*, errors::*},
     anchor_spl::token_interface,
-    spl_token_2022::instruction::transfer_checked,
+    spl_token_2022::instruction::{transfer_checked, mint_to},
     solana_program::{program::invoke_signed},
 };
 
-pub fn handler(ctx: Context<Unstake>, amount: u64) -> Result <()> {
+pub fn handler(ctx: Context<Unstake>) -> Result <()> {
     let user_entry = &mut ctx.accounts.user_stake_entry;
+    let amount = user_entry.balance;
 
     msg!("User stake balance: {}", user_entry.balance);
-    msg!("Requested withdraw amount: {}", amount);
+    msg!("Withdrawing all of users stake balance. Tokens to withdraw: {}", amount);
     msg!("Total staked before withdrawal: {}", ctx.accounts.pool_state.amount);
 
     // verify user and pool have >= requested amount of tokens staked
-    if amount > user_entry.balance || amount > ctx.accounts.pool_state.amount {
+    if amount > ctx.accounts.pool_state.amount {
         return Err(StakeError::OverdrawError.into())
     }
 
@@ -22,6 +23,9 @@ pub fn handler(ctx: Context<Unstake>, amount: u64) -> Result <()> {
     let auth_bump = ctx.accounts.pool_state.vault_auth_bump;
     let auth_seeds = &[VAULT_AUTH_SEED.as_bytes(), &[auth_bump]];
     let signer = &[&auth_seeds[..]];
+
+    // THIS IS DANGEROUS BECAUSE WE'RE DOING THIS AS TWO SEPARATE INSTRUCTIONS
+    // well not dangerous but not good
 
     // transfer out_amount from stake vault to user
     let transfer_ix = transfer_checked(
@@ -34,7 +38,6 @@ pub fn handler(ctx: Context<Unstake>, amount: u64) -> Result <()> {
         amount,
         6
     ).unwrap();
-
     invoke_signed(
         &transfer_ix,
         &[
@@ -42,7 +45,28 @@ pub fn handler(ctx: Context<Unstake>, amount: u64) -> Result <()> {
             ctx.accounts.token_vault.to_account_info(),
             ctx.accounts.token_mint.to_account_info(),
             ctx.accounts.user_token_account.to_account_info(),
-            ctx.accounts.pool_authority.to_account_info()
+            ctx.accounts.pool_authority.to_account_info(),
+        ],
+        signer
+    )?;
+
+    // mint users staking rewards
+    let mint_ix = mint_to(
+        &ctx.accounts.token_program.key(),
+        &ctx.accounts.staking_token_mint.key(),
+        &ctx.accounts.user_stake_token_account.key(),
+        &ctx.accounts.pool_authority.key(),
+        &[&ctx.accounts.pool_authority.key()],
+        1
+    ).unwrap();
+    invoke_signed(
+        &mint_ix,
+        &[
+            ctx.accounts.token_program.to_account_info(),
+            ctx.accounts.staking_token_mint.to_account_info(),
+            ctx.accounts.user_stake_token_account.to_account_info(),
+            ctx.accounts.user.to_account_info(),
+            ctx.accounts.pool_authority.to_account_info(),
         ],
         signer
     )?;
@@ -106,6 +130,20 @@ pub struct Unstake<'info> {
 
     )]
     pub user_stake_entry: Account<'info, StakeEntry>,
+    // Mint of staking token
+    #[account(
+        mut,
+        mint::authority = pool_authority,
+        constraint = staking_token_mint.key() == pool_state.staking_token_mint
+        @ StakeError::InvalidStakingTokenMint
+    )]
+    pub staking_token_mint: InterfaceAccount<'info, token_interface::Mint>,
+    #[account(
+        mut,
+        token::mint = staking_token_mint,
+        token::authority = user,
+    )]
+    user_stake_token_account: InterfaceAccount<'info, token_interface::TokenAccount>,
     // token22 program
     pub token_program: Interface<'info, token_interface::TokenInterface>,
     pub system_program: Program<'info, System>

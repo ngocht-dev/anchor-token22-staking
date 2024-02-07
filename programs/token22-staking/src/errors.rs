@@ -13,5 +13,7 @@ pub enum StakeError {
     #[msg("Attempted to withdraw more staking rewards than are available")]
     OverdrawError,
     #[msg("Invalid user provided")]
-    InvalidUser
+    InvalidUser,
+    #[msg("Invalid staking token mint provider")]
+    InvalidStakingTokenMint
 }
