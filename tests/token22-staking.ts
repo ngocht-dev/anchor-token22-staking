@@ -1,9 +1,9 @@
 import * as anchor from "@coral-xyz/anchor";
 import { Program } from "@coral-xyz/anchor";
 import { Token22Staking } from "../target/types/token22_staking";
-import { PublicKey, SystemProgram, SYSVAR_RENT_PUBKEY, LAMPORTS_PER_SOL } from '@solana/web3.js'
-import { TOKEN_PROGRAM_ID, mintTo, createMint, setAuthority, AuthorityType, getAssociatedTokenAddress, createAssociatedTokenAccount, getAccount, TOKEN_2022_PROGRAM_ID, ASSOCIATED_TOKEN_PROGRAM_ID } from '@solana/spl-token'
-import { delay, safeAirdrop, MULT } from './utils/utils'
+import { PublicKey, SystemProgram, SYSVAR_RENT_PUBKEY } from '@solana/web3.js'
+import { mintTo, createMint, getAssociatedTokenAddress, createAssociatedTokenAccount, getAccount, TOKEN_2022_PROGRAM_ID, ASSOCIATED_TOKEN_PROGRAM_ID } from '@solana/spl-token'
+import { delay, safeAirdrop } from './utils/utils'
 import { assert } from "chai"
 import { BN } from "bn.js"
 
@@ -33,7 +33,6 @@ describe("token22-staking", async () => {
     program.programId
   )
 
-
   it("Create Staking Token Mint", async () => {
     await safeAirdrop(vaultAuthority, provider.connection)
     await safeAirdrop(provider.wallet.publicKey, provider.connection)
@@ -51,23 +50,7 @@ describe("token22-staking", async () => {
       undefined,
       TOKEN_2022_PROGRAM_ID
     )
-    
     // console.log("Staking token mint: ", stakingTokenMint.toBase58())
-
-    // assign staking token mint to a PDA of the staking program
-    // let setAuthTx = await setAuthority(
-    //   provider.connection,
-    //   payer,
-    //   stakingTokenMint,
-    //   payer,
-    //   AuthorityType.MintTokens,
-    //   vaultAuthority,
-    //   undefined,
-    //   undefined,
-    //   TOKEN_2022_PROGRAM_ID
-    // )
-    
-    // console.log("Authority assignment tx: ", setAuthTx)
   })
 
   it("Create test token to stake", async () => {
@@ -82,19 +65,10 @@ describe("token22-staking", async () => {
       undefined,
       TOKEN_2022_PROGRAM_ID
     )
-
     // console.log("Test token mint: ", testTokenMint.toBase58())
 
     // create test token ata of test user
     user1StakeAta = await getAssociatedTokenAddress(stakingTokenMint, payer.publicKey, false, TOKEN_2022_PROGRAM_ID)
-    // user1StakeAta = await createAssociatedTokenAccount (
-    //   provider.connection,
-    //   payer,
-    //   stakingTokenMint,
-    //   payer.publicKey,
-    //   undefined,
-    //   TOKEN_2022_PROGRAM_ID
-    // )
 
     user1Ata = await createAssociatedTokenAccount (
       provider.connection,
@@ -104,7 +78,6 @@ describe("token22-staking", async () => {
       undefined,
       TOKEN_2022_PROGRAM_ID
     )
-
     // console.log("Test user associated tokena account: ", user1Ata.toBase58())
 
     // mint 1000 tokens to test user
@@ -119,7 +92,6 @@ describe("token22-staking", async () => {
       undefined,
       TOKEN_2022_PROGRAM_ID
     )
-    
     // console.log("Mint tx: ", mintTx)
   })
 
@@ -169,12 +141,6 @@ describe("token22-staking", async () => {
       program.programId
     )
     user1StakeEntry = stakeEntry
-
-    console.log(payer.publicKey.toBase58())
-    console.log(user1StakeEntry.toBase58())
-    console.log(user1StakeAta.toBase58())
-    console.log(stakingTokenMint.toBase58())
-    console.log(pool.toBase58())
 
     await program.methods.initStakeEntry()
     .accounts({
@@ -250,8 +216,6 @@ describe("token22-staking", async () => {
     // console.log("Total amount staked in pool after transfer: ", updatedPoolStateAcct.amount.toNumber())
   })
   it("Unstake!", async () => {
-    // const unstakeAmount = 1
-
     // fetch stake account before unstake
     let userEntryAcct = await program.account.stakeEntry.fetch(user1StakeEntry)
     let initialEntryBalance = userEntryAcct.balance
