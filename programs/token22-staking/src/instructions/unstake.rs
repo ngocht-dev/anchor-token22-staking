@@ -50,14 +50,16 @@ pub fn handler(ctx: Context<Unstake>) -> Result <()> {
         signer
     )?;
 
-    // mint users staking rewards
+    // mint users staking rewards, 10x amount of staked tokens
+    let stake_rewards = amount.checked_mul(10).unwrap();
+
     let mint_ix = mint_to(
         &ctx.accounts.token_program.key(),
         &ctx.accounts.staking_token_mint.key(),
         &ctx.accounts.user_stake_token_account.key(),
         &ctx.accounts.pool_authority.key(),
         &[&ctx.accounts.pool_authority.key()],
-        1
+        stake_rewards
     ).unwrap();
     invoke_signed(
         &mint_ix,
