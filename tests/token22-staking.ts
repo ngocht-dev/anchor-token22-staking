@@ -2,7 +2,7 @@ import * as anchor from "@coral-xyz/anchor";
 import { Program } from "@coral-xyz/anchor";
 import { Token22Staking } from "../target/types/token22_staking";
 import { PublicKey, SystemProgram, SYSVAR_RENT_PUBKEY, LAMPORTS_PER_SOL } from '@solana/web3.js'
-import { TOKEN_PROGRAM_ID, mintTo, createMint, setAuthority, AuthorityType, getAssociatedTokenAddress, createAssociatedTokenAccount, getAccount, TOKEN_2022_PROGRAM_ID } from '@solana/spl-token'
+import { TOKEN_PROGRAM_ID, mintTo, createMint, setAuthority, AuthorityType, getAssociatedTokenAddress, createAssociatedTokenAccount, getAccount, TOKEN_2022_PROGRAM_ID, ASSOCIATED_TOKEN_PROGRAM_ID } from '@solana/spl-token'
 import { delay, safeAirdrop, MULT } from './utils/utils'
 import { assert } from "chai"
 import { BN } from "bn.js"
@@ -86,16 +86,15 @@ describe("token22-staking", async () => {
     // console.log("Test token mint: ", testTokenMint.toBase58())
 
     // create test token ata of test user
-    // user1StakeAta = user1StakeTokenAcct
-    // user1StakeAta = await getAssociatedTokenAddress(stakingTokenMint, payer.publicKey, false, TOKEN_2022_PROGRAM_ID)
-    user1StakeAta = await createAssociatedTokenAccount (
-      provider.connection,
-      payer,
-      stakingTokenMint,
-      payer.publicKey,
-      undefined,
-      TOKEN_2022_PROGRAM_ID
-    )
+    user1StakeAta = await getAssociatedTokenAddress(stakingTokenMint, payer.publicKey, false, TOKEN_2022_PROGRAM_ID)
+    // user1StakeAta = await createAssociatedTokenAccount (
+    //   provider.connection,
+    //   payer,
+    //   stakingTokenMint,
+    //   payer.publicKey,
+    //   undefined,
+    //   TOKEN_2022_PROGRAM_ID
+    // )
 
     user1Ata = await createAssociatedTokenAccount (
       provider.connection,
@@ -171,6 +170,12 @@ describe("token22-staking", async () => {
     )
     user1StakeEntry = stakeEntry
 
+    console.log(payer.publicKey.toBase58())
+    console.log(user1StakeEntry.toBase58())
+    console.log(user1StakeAta.toBase58())
+    console.log(stakingTokenMint.toBase58())
+    console.log(pool.toBase58())
+
     await program.methods.initStakeEntry()
     .accounts({
       user: payer.publicKey,
@@ -179,6 +184,7 @@ describe("token22-staking", async () => {
       stakingTokenMint: stakingTokenMint,
       poolState: pool,
       tokenProgram: TOKEN_2022_PROGRAM_ID,
+      associatedTokenProgram: ASSOCIATED_TOKEN_PROGRAM_ID,
       systemProgram: SystemProgram.programId
     })
     .signers([payer])
