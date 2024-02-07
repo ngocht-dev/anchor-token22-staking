@@ -144,6 +144,8 @@ pub struct Unstake<'info> {
         mut,
         token::mint = staking_token_mint,
         token::authority = user,
+        constraint = user_stake_token_account.key() == user_stake_entry.user_stake_token_account
+        @ StakeError::InvalidUserStakeTokenAccount
     )]
     user_stake_token_account: InterfaceAccount<'info, token_interface::TokenAccount>,
     // token22 program

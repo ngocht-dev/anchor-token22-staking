@@ -15,5 +15,7 @@ pub enum StakeError {
     #[msg("Invalid user provided")]
     InvalidUser,
     #[msg("Invalid staking token mint provider")]
-    InvalidStakingTokenMint
+    InvalidStakingTokenMint,
+    #[msg("Given user stake token account does not match what is stored in user stake entry!")]
+    InvalidUserStakeTokenAccount
 }

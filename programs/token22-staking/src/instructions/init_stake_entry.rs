@@ -9,7 +9,7 @@ pub fn handler(ctx: Context<InitializeStakeEntry>) -> Result<()> {
     // initialize user stake entry state
     let user_entry = &mut ctx.accounts.user_stake_entry;
     user_entry.user = ctx.accounts.user.key();
-    // user_entry.user_stake_token_account = ctx.accounts.user_stake_token_account.key();
+    user_entry.user_stake_token_account = ctx.accounts.user_stake_token_account.key();
     user_entry.bump = ctx.bumps.user_stake_entry;
     user_entry.balance = 0;
     
