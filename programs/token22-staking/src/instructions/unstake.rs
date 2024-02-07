@@ -24,8 +24,7 @@ pub fn handler(ctx: Context<Unstake>) -> Result <()> {
     let auth_seeds = &[VAULT_AUTH_SEED.as_bytes(), &[auth_bump]];
     let signer = &[&auth_seeds[..]];
 
-    // THIS IS DANGEROUS BECAUSE WE'RE DOING THIS AS TWO SEPARATE INSTRUCTIONS
-    // well not dangerous but not good
+    // ***** Should re-think this sequence. Since doing in two separate tx's, one can fail. ***** //
 
     // transfer out_amount from stake vault to user
     let transfer_ix = transfer_checked(
