@@ -1,10 +1,15 @@
 use {
     anchor_lang::prelude::*,
-    crate::{state::*, errors::*},
-    anchor_spl::{token_interface, token_2022::{TransferChecked, transfer_checked}},
+    crate::{state::*, errors::*, utils::*},
+    anchor_spl::{
+        token_interface,
+        token_2022::{TransferChecked, transfer_checked},
+    },
 };
 
 pub fn handler(ctx: Context<Stake>, stake_amount: u64) -> Result <()> {
+    check_token_program(ctx.accounts.token_program.key());
+
     // transfer_checked from token22 program
     transfer_checked(ctx.accounts.transfer_checked_ctx(), stake_amount, 6)?;
 
@@ -35,7 +40,10 @@ pub struct Stake<'info> {
     )]
     pub pool_state: Account<'info, PoolState>,
     // Mint of token to stake
-    #[account(mut)]
+    #[account(
+        mut,
+        token::token_program = token_program
+    )]
     pub token_mint: InterfaceAccount<'info, token_interface::Mint>,
     // PDA, auth over all token vaults
     /// CHECK: unsafe
@@ -50,6 +58,7 @@ pub struct Stake<'info> {
         // use token_mint, pool auth, and constant as seeds for token a vault
         seeds = [token_mint.key().as_ref(), pool_authority.key().as_ref(), VAULT_SEED.as_bytes()],
         bump = pool_state.vault_bump,
+        token::token_program = token_program
     )]
     pub token_vault: InterfaceAccount<'info, token_interface::TokenAccount>,
     #[account(
@@ -61,7 +70,8 @@ pub struct Stake<'info> {
     #[account(
         mut,
         constraint = user_token_account.mint == pool_state.token_mint
-        @ StakeError::InvalidMint
+        @ StakeError::InvalidMint,
+        token::token_program = token_program
     )]
     pub user_token_account: InterfaceAccount<'info, token_interface::TokenAccount>,
     #[account(
@@ -71,7 +81,6 @@ pub struct Stake<'info> {
 
     )]
     pub user_stake_entry: Account<'info, StakeEntry>,
-    // token22 program
     pub token_program: Interface<'info, token_interface::TokenInterface>,
     pub system_program: Program<'info, System>
 }

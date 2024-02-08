@@ -1,12 +1,14 @@
 use {
     anchor_lang::prelude::*,
-    crate::{state::*, errors::*},
+    crate::{state::*, errors::*, utils::*},
     anchor_spl::token_interface,
     spl_token_2022::instruction::{transfer_checked, mint_to},
     solana_program::{program::invoke_signed},
 };
 
 pub fn handler(ctx: Context<Unstake>) -> Result <()> {
+    check_token_program(ctx.accounts.token_program.key());
+    
     let user_entry = &mut ctx.accounts.user_stake_entry;
     let amount = user_entry.balance;
 
@@ -94,7 +96,10 @@ pub struct Unstake<'info> {
     )]
     pub pool_state: Account<'info, PoolState>,
     // Mint of token
-    #[account(mut)]
+    #[account(
+        mut,
+        mint::token_program = token_program
+    )]
     pub token_mint: InterfaceAccount<'info, token_interface::Mint>,
     // PDA, auth over all token vaults
     /// CHECK: unsafe
@@ -109,6 +114,7 @@ pub struct Unstake<'info> {
         // use token_mint, pool auth, and constant as seeds for token a vault
         seeds = [token_mint.key().as_ref(), pool_authority.key().as_ref(), VAULT_SEED.as_bytes()],
         bump = pool_state.vault_bump,
+        token::token_program = token_program
     )]
     pub token_vault: InterfaceAccount<'info, token_interface::TokenAccount>,
     // require a signature because only the user should be able to unstake their tokens
@@ -121,7 +127,8 @@ pub struct Unstake<'info> {
     #[account(
         mut,
         constraint = user_token_account.mint == pool_state.token_mint
-        @ StakeError::InvalidMint
+        @ StakeError::InvalidMint,
+        token::token_program = token_program
     )]
     pub user_token_account: InterfaceAccount<'info, token_interface::TokenAccount>,
     #[account(
@@ -135,6 +142,7 @@ pub struct Unstake<'info> {
     #[account(
         mut,
         mint::authority = pool_authority,
+        mint::token_program = token_program,
         constraint = staking_token_mint.key() == pool_state.staking_token_mint
         @ StakeError::InvalidStakingTokenMint
     )]
@@ -143,11 +151,11 @@ pub struct Unstake<'info> {
         mut,
         token::mint = staking_token_mint,
         token::authority = user,
+        token::token_program = token_program,
         constraint = user_stake_token_account.key() == user_stake_entry.user_stake_token_account
         @ StakeError::InvalidUserStakeTokenAccount
     )]
     user_stake_token_account: InterfaceAccount<'info, token_interface::TokenAccount>,
-    // token22 program
     pub token_program: Interface<'info, token_interface::TokenInterface>,
     pub system_program: Program<'info, System>
 }

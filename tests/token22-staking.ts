@@ -14,8 +14,8 @@ describe("token22-staking", async () => {
   const program = anchor.workspace.Token22Staking as Program<Token22Staking>;
   const provider = anchor.AnchorProvider.env()
 
+  // test accounts
   const payer = anchor.web3.Keypair.generate()
-
   let stakingTokenMint: PublicKey = null
   let stakeVault: PublicKey = null
   let pool: PublicKey = null
@@ -26,20 +26,19 @@ describe("token22-staking", async () => {
   let user2StakeEntry: PublicKey = null
   let user3StakeEntry: PublicKey = null
 
-
   // derive program authority PDA
   let [vaultAuthority, vaultAuthBump] = await PublicKey.findProgramAddress(
     [Buffer.from("vault_authority")],
     program.programId
   )
 
-  it("Create Staking Token Mint", async () => {
+  it("[Token22] Create Staking Token Mint with Token22 Program", async () => {
     await safeAirdrop(vaultAuthority, provider.connection)
     await safeAirdrop(provider.wallet.publicKey, provider.connection)
     await safeAirdrop(payer.publicKey, provider.connection)
     delay(10000)
 
-    // create staking token mint    
+    // create staking token mint, pass in TOKEN_2022_PROGRAM_ID
     stakingTokenMint = await createMint(
       provider.connection,
       payer,
@@ -53,7 +52,7 @@ describe("token22-staking", async () => {
     // console.log("Staking token mint: ", stakingTokenMint.toBase58())
   })
 
-  it("Create test token to stake", async () => {
+  it("[Token22] Create test Token22 token to stake", async () => {
     // create new token mint    
     testTokenMint = await createMint(
       provider.connection,
@@ -95,7 +94,7 @@ describe("token22-staking", async () => {
     // console.log("Mint tx: ", mintTx)
   })
 
-  it("Create test stake pool!", async () => {
+  it("[Token22] Create test stake pool with Token22 tokens!", async () => {
     const [poolState, poolBump] = await PublicKey.findProgramAddress(
       [testTokenMint.toBuffer(), Buffer.from("state")],
       program.programId
@@ -133,7 +132,7 @@ describe("token22-staking", async () => {
     assert(poolAcct.vaultBump == vaultBump)
   })
 
-  it("Create stake entry for user", async () => {
+  it("[Token22] Create stake entry for user", async () => {
     const poolStateAcct = await program.account.poolState.fetch(pool)
     
     const [stakeEntry, stakeentryBump] = await PublicKey.findProgramAddress(
@@ -162,7 +161,7 @@ describe("token22-staking", async () => {
     assert(stakeAcct.bump == stakeentryBump)
   })
 
-  it("Stake tokens!", async () => {
+  it("[Token22] Stake tokens!", async () => {
     const transferAmount = 1
 
     // fetch stake account before transfer
@@ -215,7 +214,7 @@ describe("token22-staking", async () => {
     // console.log("User 1 amount staked after transfer: ", updatedUserEntryAcct.balance.toNumber())
     // console.log("Total amount staked in pool after transfer: ", updatedPoolStateAcct.amount.toNumber())
   })
-  it("Unstake!", async () => {
+  it("[Token22] Unstake!", async () => {
     // fetch stake account before unstake
     let userEntryAcct = await program.account.stakeEntry.fetch(user1StakeEntry)
     let initialEntryBalance = userEntryAcct.balance
@@ -251,7 +250,7 @@ describe("token22-staking", async () => {
     userTokenAcct = await getAccount(provider.connection, user1Ata, undefined, TOKEN_2022_PROGRAM_ID)
     stakeVaultAcct = await getAccount(provider.connection, stakeVault, undefined, TOKEN_2022_PROGRAM_ID)
     let userStakeTokenAcct = await getAccount(provider.connection, user1StakeAta, undefined, TOKEN_2022_PROGRAM_ID)
-    console.log("User staking token balance: ", userStakeTokenAcct.amount.toString())
+    // console.log("User staking token balance: ", userStakeTokenAcct.amount.toString())
     assert(userStakeTokenAcct.amount > BigInt(0))
     assert(userTokenAcct.amount == initialUserTokenAcctBalance + BigInt(initialEntryBalance))
     assert(stakeVaultAcct.amount == initialVaultBalance - BigInt(initialEntryBalance))

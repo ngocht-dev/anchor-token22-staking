@@ -1,12 +1,13 @@
 use {
     anchor_lang::prelude::*,
-    crate::{state::*},
-    anchor_spl::token_interface,
+    crate::{state::*, utils::*},
+    anchor_spl::{token_interface},
     std::mem::size_of
 };
 
 pub fn handler(ctx: Context<InitializePool>) -> Result <()> {
-
+    check_token_program(ctx.accounts.token_program.key());
+    
     // initialize pool state
     let pool_state = &mut ctx.accounts.pool_state;
     pool_state.bump = ctx.bumps.pool_state;
@@ -41,7 +42,10 @@ pub struct InitializePool<'info> {
     )]
     pub pool_state: Account<'info, PoolState>,
     // Mint of token
-    #[account(mut)]
+    #[account(
+        mut,
+        mint::token_program = token_program
+    )]
     pub token_mint: InterfaceAccount<'info, token_interface::Mint>,
     // pool token account for Token Mint
     #[account(
@@ -55,12 +59,14 @@ pub struct InitializePool<'info> {
     )]
     pub token_vault: InterfaceAccount<'info, token_interface::TokenAccount>,
     // Mint of staking token
-    #[account(mut)]
+    #[account(
+        mut,
+        mint::token_program = token_program
+    )]
     pub staking_token_mint: InterfaceAccount<'info, token_interface::Mint>,
     // payer, will pay for creation of pool vault
     #[account(mut)]
     pub payer: Signer<'info>,
-    // token22 program
     pub token_program: Interface<'info, token_interface::TokenInterface>,
     pub system_program: Program<'info, System>,
     pub rent: Sysvar<'info, Rent>

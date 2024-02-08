@@ -1,11 +1,16 @@
 use {
     anchor_lang::prelude::*,
-    crate::{state::*, errors::*},
+    crate::{state::*, errors::*, utils::*},
     std::mem::size_of,
-    anchor_spl::{token_interface, associated_token::AssociatedToken},
+    anchor_spl::{
+        token_interface,
+        associated_token::AssociatedToken,
+    },
 };
 
 pub fn handler(ctx: Context<InitializeStakeEntry>) -> Result<()> {
+    check_token_program(ctx.accounts.token_program.key());
+
     // initialize user stake entry state
     let user_entry = &mut ctx.accounts.user_stake_entry;
     user_entry.user = ctx.accounts.user.key();
@@ -38,7 +43,8 @@ pub struct InitializeStakeEntry<'info> {
     pub user_stake_token_account: InterfaceAccount<'info, token_interface::TokenAccount>,
     #[account(
         constraint = staking_token_mint.key() == pool_state.staking_token_mint
-        @ StakeError::InvalidStakingTokenMint
+        @ StakeError::InvalidStakingTokenMint,
+        mint::token_program = token_program
     )]
     pub staking_token_mint: InterfaceAccount<'info, token_interface::Mint>,
     #[account(
@@ -46,7 +52,6 @@ pub struct InitializeStakeEntry<'info> {
         bump = pool_state.bump
     )]
     pub pool_state: Account<'info, PoolState>,
-    // token22 program
     pub token_program: Interface<'info, token_interface::TokenInterface>,
     pub associated_token_program: Program<'info, AssociatedToken>,
     pub system_program: Program<'info, System>
