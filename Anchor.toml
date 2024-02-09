@@ -8,14 +8,14 @@ skip-lint = false
 startup_wait = 10000
 
 [programs.localnet]
-token_22_staking = "7kLCzmB2pbs5wg8M1rw41ijnc2a6UyvwcCHjisqqWHWU"
+token_22_staking = "YOUR_ID_HERE"
 
 [registry]
 url = "https://api.apr.dev"
 
 [provider]
 cluster = "Localnet"
-wallet = "/Users/coach/.config/solana/id.json"
+wallet = "/your/path/here/id.json"
 
 [scripts]
 test = "yarn run ts-mocha -p ./tsconfig.json -t 1000000 tests/**/*.ts"

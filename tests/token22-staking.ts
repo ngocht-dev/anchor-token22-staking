@@ -135,7 +135,7 @@ describe("token22-staking", async () => {
   it("[Token22] Create stake entry for user", async () => {
     const poolStateAcct = await program.account.poolState.fetch(pool)
     
-    const [stakeEntry, stakeentryBump] = await PublicKey.findProgramAddress(
+    const [stakeEntry, stakeEntryBump] = await PublicKey.findProgramAddress(
       [payer.publicKey.toBuffer(), poolStateAcct.tokenMint.toBuffer(), Buffer.from("stake_entry")],
       program.programId
     )
@@ -158,7 +158,7 @@ describe("token22-staking", async () => {
     const stakeAcct = await program.account.stakeEntry.fetch(user1StakeEntry)
     assert(stakeAcct.user.toBase58() == payer.publicKey.toBase58())
     assert(stakeAcct.balance.eq(new BN(0)))
-    assert(stakeAcct.bump == stakeentryBump)
+    assert(stakeAcct.bump == stakeEntryBump)
   })
 
   it("[Token22] Stake tokens!", async () => {

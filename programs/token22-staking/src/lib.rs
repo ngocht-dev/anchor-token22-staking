@@ -5,7 +5,7 @@ pub mod utils;
 
 use {anchor_lang::prelude::*, instructions::*};
 
-declare_id!("7kLCzmB2pbs5wg8M1rw41ijnc2a6UyvwcCHjisqqWHWU");
+declare_id!("YOUR_ID_HERE");
 
 #[program]
 pub mod token_22_staking {
