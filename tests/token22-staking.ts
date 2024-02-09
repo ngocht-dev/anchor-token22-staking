@@ -80,7 +80,7 @@ describe("token22-staking", async () => {
     // console.log("Test user associated tokena account: ", user1Ata.toBase58())
 
     // mint 1000 tokens to test user
-    let mintTx = await mintTo(
+    const mintTx = await mintTo(
       provider.connection,
       payer,
       testTokenMint,
@@ -157,7 +157,7 @@ describe("token22-staking", async () => {
 
     const stakeAcct = await program.account.stakeEntry.fetch(user1StakeEntry)
     assert(stakeAcct.user.toBase58() == payer.publicKey.toBase58())
-    assert(stakeAcct.balance == 0)
+    assert(stakeAcct.balance.eq(new BN(0)))
     assert(stakeAcct.bump == stakeentryBump)
   })
 
@@ -252,13 +252,13 @@ describe("token22-staking", async () => {
     let userStakeTokenAcct = await getAccount(provider.connection, user1StakeAta, undefined, TOKEN_2022_PROGRAM_ID)
     // console.log("User staking token balance: ", userStakeTokenAcct.amount.toString())
     assert(userStakeTokenAcct.amount > BigInt(0))
-    assert(userTokenAcct.amount == initialUserTokenAcctBalance + BigInt(initialEntryBalance))
-    assert(stakeVaultAcct.amount == initialVaultBalance - BigInt(initialEntryBalance))
+    assert(userTokenAcct.amount == initialUserTokenAcctBalance + BigInt(initialEntryBalance.toNumber()))
+    assert(stakeVaultAcct.amount == initialVaultBalance - BigInt(initialEntryBalance.toNumber()))
 
     // verify state accounts
     userEntryAcct = await program.account.stakeEntry.fetch(user1StakeEntry)
     poolAcct = await program.account.poolState.fetch(pool)
-    assert(poolAcct.amount.toNumber() == initialPoolAmt.toNumber() - initialEntryBalance)
-    assert(userEntryAcct.balance == 0)
+    assert(poolAcct.amount.toNumber() == initialPoolAmt.toNumber() - initialEntryBalance.toNumber())
+    assert(userEntryAcct.balance.eq(new BN(0)))
   })
 });

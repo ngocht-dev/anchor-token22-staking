@@ -71,7 +71,8 @@ pub struct Stake<'info> {
         mut,
         constraint = user_token_account.mint == pool_state.token_mint
         @ StakeError::InvalidMint,
-        token::token_program = token_program
+        token::token_program = token_program,
+        token::authority = user.key()
     )]
     pub user_token_account: InterfaceAccount<'info, token_interface::TokenAccount>,
     #[account(

@@ -26,8 +26,6 @@ pub fn handler(ctx: Context<Unstake>) -> Result <()> {
     let auth_seeds = &[VAULT_AUTH_SEED.as_bytes(), &[auth_bump]];
     let signer = &[&auth_seeds[..]];
 
-    // ***** Should re-think this sequence. Since doing in two separate tx's, one can fail. ***** //
-
     // transfer out_amount from stake vault to user
     let transfer_ix = transfer_checked(
         &ctx.accounts.token_program.key(),
@@ -37,7 +35,7 @@ pub fn handler(ctx: Context<Unstake>) -> Result <()> {
         &ctx.accounts.pool_authority.key(),
         &[&ctx.accounts.pool_authority.key()],
         amount,
-        6
+        6 //TODO store in state
     ).unwrap();
     invoke_signed(
         &transfer_ix,
@@ -52,6 +50,7 @@ pub fn handler(ctx: Context<Unstake>) -> Result <()> {
     )?;
 
     // mint users staking rewards, 10x amount of staked tokens
+    // Challenge: Implement Logic Here
     let stake_rewards = amount.checked_mul(10).unwrap();
 
     let mint_ix = mint_to(
@@ -128,6 +127,7 @@ pub struct Unstake<'info> {
         mut,
         constraint = user_token_account.mint == pool_state.token_mint
         @ StakeError::InvalidMint,
+        token::authority = user.key(),
         token::token_program = token_program
     )]
     pub user_token_account: InterfaceAccount<'info, token_interface::TokenAccount>,

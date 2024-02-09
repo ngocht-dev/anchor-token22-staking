@@ -44,6 +44,7 @@ pub struct InitializePool<'info> {
     // Mint of token
     #[account(
         mut,
+        mint::authority = payer.key(),
         mint::token_program = token_program
     )]
     pub token_mint: InterfaceAccount<'info, token_interface::Mint>,
@@ -53,6 +54,7 @@ pub struct InitializePool<'info> {
         token::mint = token_mint,
         token::authority = pool_authority,
         // use token_mint, pool auth, and constant as seeds for token a vault
+        //TODO remove pool_authority from seeds
         seeds = [token_mint.key().as_ref(), pool_authority.key().as_ref(), VAULT_SEED.as_bytes()],
         bump,
         payer = payer,
@@ -61,6 +63,7 @@ pub struct InitializePool<'info> {
     // Mint of staking token
     #[account(
         mut,
+        mint::authority = pool_authority,
         mint::token_program = token_program
     )]
     pub staking_token_mint: InterfaceAccount<'info, token_interface::Mint>,
