@@ -8,7 +8,7 @@ skip-lint = false
 startup_wait = 10000
 
 [programs.localnet]
-token_22_staking = "YOUR_ID_HERE"
+token_22_staking = "B4BggqnwnSxStDL8eX3JiEsLmesXKLGskJNPeLdqhK3s"
 
 [registry]
 url = "https://api.apr.dev"
