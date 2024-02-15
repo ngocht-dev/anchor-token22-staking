@@ -1,9 +1,10 @@
 use {
     anchor_lang::prelude::*,
     crate::{state::*, errors::*, utils::*},
-    anchor_spl::token_interface,
-    spl_token_2022::instruction::{transfer_checked, mint_to},
-    solana_program::{program::invoke_signed},
+    anchor_spl::{
+        token_interface,
+        token_2022::{TransferChecked, transfer_checked, mint_to, MintTo},
+    }
 };
 
 pub fn handler(ctx: Context<Unstake>) -> Result <()> {

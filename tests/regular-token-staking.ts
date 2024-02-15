@@ -251,7 +251,7 @@ describe("Original Token staking", async () => {
         userTokenAcct = await getAccount(provider.connection, user1Ata, undefined, TOKEN_PROGRAM_ID)
         stakeVaultAcct = await getAccount(provider.connection, stakeVault, undefined, TOKEN_PROGRAM_ID)
         let userStakeTokenAcct = await getAccount(provider.connection, user1StakeAta, undefined, TOKEN_PROGRAM_ID)
-        console.log("User staking token balance: ", userStakeTokenAcct.amount.toString())
+        // console.log("User staking token balance: ", userStakeTokenAcct.amount.toString())
         assert(userStakeTokenAcct.amount > BigInt(0))
         assert(userTokenAcct.amount == initialUserTokenAcctBalance + BigInt(initialEntryBalance.toNumber()))
         assert(stakeVaultAcct.amount == initialVaultBalance - BigInt(initialEntryBalance.toNumber()))
