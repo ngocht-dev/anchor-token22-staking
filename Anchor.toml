@@ -18,5 +18,4 @@ cluster = "https://api.devnet.solana.com"
 wallet = "~/.config/solana/id.json"
 
 [scripts]
-test = "yarn run ts-mocha -p ./tsconfig.json -t 1000000 tests/regular-token-staking.ts"
-test-regular-token-staking = "yarn run ts-mocha -p ./tsconfig.json -t 1000000 tests/regular-token-staking.ts"
+test = "yarn run ts-mocha -p ./tsconfig.json -t 1000000 tests/token22-staking.ts"

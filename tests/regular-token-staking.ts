@@ -11,6 +11,7 @@ import {
   TOKEN_PROGRAM_ID,
   ASSOCIATED_TOKEN_PROGRAM_ID,
   TokenAccountNotFoundError,
+  transferChecked
 } from "@solana/spl-token";
 import { delay, safeAirdrop } from "./utils/utils";
 import { assert } from "chai";
