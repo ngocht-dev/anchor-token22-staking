@@ -8,14 +8,15 @@ skip-lint = false
 startup_wait = 10000
 
 [programs.localnet]
-token_22_staking = "B4BggqnwnSxStDL8eX3JiEsLmesXKLGskJNPeLdqhK3s"
+token_22_staking = "EYZPBAg8e4rTCUsEoavXgywPr2c8JjTDkXx46dVmDeY2"
 
 [registry]
 url = "https://api.apr.dev"
 
 [provider]
-cluster = "Localnet"
-wallet = "/your/path/here/id.json"
+cluster = "https://api.devnet.solana.com"
+wallet = "~/.config/solana/id.json"
 
 [scripts]
-test = "yarn run ts-mocha -p ./tsconfig.json -t 1000000 tests/**/*.ts"
+test = "yarn run ts-mocha -p ./tsconfig.json -t 1000000 tests/regular-token-staking.ts"
+test-regular-token-staking = "yarn run ts-mocha -p ./tsconfig.json -t 1000000 tests/regular-token-staking.ts"
